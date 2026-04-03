@@ -1,0 +1,13 @@
+# Локальна папка з плагінами та бінарними файлами
+.terraform/
+
+# Файли стану 
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+
+# Файли конфігурації провайдерів
+.terraform.lock.hcl
+
+# Логи помилок
+crash.log
