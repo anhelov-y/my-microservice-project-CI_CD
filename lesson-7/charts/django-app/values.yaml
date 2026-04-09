@@ -1,0 +1,23 @@
+replicaCount: 2
+
+image:
+  repository: "" # Сюди вставиш URL після terraform apply
+  tag: "latest"
+
+service:
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+env:
+  DEBUG: "True"
+  DB_NAME: "postgres"
+  DB_USER: "postgres"
+  DB_PASSWORD: "yourpassword"
+  DB_HOST: "db-service"
+  DB_PORT: "5432"
+
+hpa:
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPU: 70
