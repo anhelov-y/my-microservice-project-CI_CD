@@ -1,4 +1,3 @@
-/*
 terraform {
   backend "s3" {
     bucket         = "anhelov-test-lesson-7"
@@ -7,4 +6,3 @@ terraform {
     dynamodb_table = "terraform-lock-table"
   }
 }
-*/

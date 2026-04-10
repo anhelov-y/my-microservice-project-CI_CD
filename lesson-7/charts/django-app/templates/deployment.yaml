@@ -14,9 +14,7 @@ spec:
     spec:
       containers:
         - name: django
-          image: 024171229197.dkr.ecr.us-east-1.amazonaws.com/django-app-repo:latest
-          command: ["sleep"]
-          args: ["3600"]
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8000
           envFrom:

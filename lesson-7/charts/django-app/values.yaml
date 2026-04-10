@@ -13,7 +13,6 @@ env:
   DEBUG: "True"
   DB_NAME: "postgres"
   DB_USER: "postgres"
-  DB_PASSWORD: "yourpassword"
   DB_HOST: "db-service"
   DB_PORT: "5432"
 
