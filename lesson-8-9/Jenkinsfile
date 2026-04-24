@@ -35,9 +35,9 @@ spec:
                     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
                     AWS_DEFAULT_REGION=${REGION} \
                     /kaniko/executor \
-                      --context . \
-                      --dockerfile lesson-8-9/Dockerfile \
-                      --destination ${ECR_URL}:${BUILD_NUMBER}
+                        --context lesson-8-9 \
+                        --dockerfile lesson-8-9/Dockerfile \
+                        --destination ${ECR_URL}:${BUILD_NUMBER}
                     """
                 }
             }
