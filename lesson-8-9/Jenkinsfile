@@ -1,10 +1,21 @@
 pipeline {
     agent {
-        kubernetes {
-            yaml file: 'lesson-8-9/modules/jenkins/values.yaml'
-            defaultContainer 'kaniko'
-        }
+    kubernetes {
+        yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command:
+    - sleep
+    args:
+    - infinity
+"""
+        defaultContainer 'kaniko'
     }
+}
     
     environment {
         ECR_URL = "${env.ECR_REPOSITORY_URL}" 
