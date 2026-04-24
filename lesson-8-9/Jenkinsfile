@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            yaml file: 'modules/jenkins/values.yaml'
+            yaml file: 'lesson-8-9/modules/jenkins/values.yaml'
             defaultContainer 'kaniko'
         }
     }
