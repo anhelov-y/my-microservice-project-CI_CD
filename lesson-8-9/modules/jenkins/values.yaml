@@ -1,0 +1,17 @@
+controller:
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - amazon-ecr:latest
+    - pipeline-stage-view:latest
+  serviceType: LoadBalancer
+
+agent:
+  enabled: true
+  podTemplates:
+    kaniko: |
+      - name: kaniko
+        image: gcr.io/kaniko-project/executor:debug
+        command: sleep
+        args: infinity

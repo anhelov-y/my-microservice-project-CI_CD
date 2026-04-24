@@ -1,0 +1,36 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml file: 'modules/jenkins/values.yaml'
+            defaultContainer 'kaniko'
+        }
+    }
+    
+    environment {
+        ECR_URL = "${env.ECR_REPOSITORY_URL}" 
+        REGION  = "eu-central-1"
+    }
+
+    stages {
+        stage('Build & Push to ECR') {
+            steps {
+                container('kaniko') {
+                    sh "/kaniko/executor --context . --dockerfile Dockerfile --destination ${ECR_URL}:${BUILD_NUMBER}"
+                }
+            }
+        }
+        
+        stage('Update Helm Chart') {
+            steps {
+                sh """
+                sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' charts/django-app/values.yaml
+                git config user.email "jenkins@example.com"
+                git config user.name "Jenkins CI"
+                git add charts/django-app/values.yaml
+                git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
+                git push origin lesson-8-9
+                """
+            }
+        }
+    }
+}
