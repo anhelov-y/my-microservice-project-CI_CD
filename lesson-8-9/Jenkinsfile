@@ -1,4 +1,5 @@
-pipeline {
+Ось повний Jenkinsfile з AWS credentials:
+groovypipeline {
     agent {
         kubernetes {
             yaml """
@@ -20,13 +21,25 @@ spec:
     environment {
         ECR_URL = "024171229197.dkr.ecr.eu-central-1.amazonaws.com/django-app-repo"
         REGION  = "eu-central-1"
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
     }
 
     stages {
         stage('Build & Push to ECR') {
             steps {
                 container('kaniko') {
-                    sh "/kaniko/executor --context . --dockerfile lesson-8-9/Dockerfile --destination ${ECR_URL}:${BUILD_NUMBER}"
+                    sh """
+                    mkdir -p /kaniko/.docker
+                    echo '{"credsStore":"ecr-login"}' > /kaniko/.docker/config.json
+                    AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
+                    AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
+                    AWS_DEFAULT_REGION=${REGION} \
+                    /kaniko/executor \
+                      --context . \
+                      --dockerfile lesson-8-9/Dockerfile \
+                      --destination ${ECR_URL}:${BUILD_NUMBER}
+                    """
                 }
             }
         }
