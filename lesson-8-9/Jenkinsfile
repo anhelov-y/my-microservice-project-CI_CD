@@ -49,10 +49,10 @@ spec:
         stage('Update Helm Chart') {
             steps {
                 container('git') {
+                    checkout scm
+                    
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
-                        cd ${env.WORKSPACE}
-
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
 
