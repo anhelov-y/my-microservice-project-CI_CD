@@ -8,16 +8,12 @@ spec:
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:debug
-    command:
-    - sleep
-    args:
-    - infinity
+    command: ["sleep"]
+    args: ["infinity"]
   - name: git
     image: alpine/git:latest
-    command:
-    - sleep
-    args:
-    - infinity
+    command: ["sleep"]
+    args: ["infinity"]
 """
             defaultContainer 'kaniko'
         }
@@ -33,7 +29,6 @@ spec:
         stage('Build & Push to ECR') {
             steps {
                 container('kaniko') {
-                    // Використовуємо блоки withCredentials для безпечної передачі ключів
                     withCredentials([
                         string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
                         string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
@@ -42,8 +37,8 @@ spec:
                         mkdir -p /kaniko/.docker
                         echo '{"credsStore":"ecr-login"}' > /kaniko/.docker/config.json
                         /kaniko/executor \
-                          --context ${PROJECT_DIR} \
-                          --dockerfile ${PROJECT_DIR}/Dockerfile \
+                          --context ${env.WORKSPACE}/${PROJECT_DIR} \
+                          --dockerfile ${env.WORKSPACE}/${PROJECT_DIR}/Dockerfile \
                           --destination ${ECR_URL}:${BUILD_NUMBER}
                         """
                     }
@@ -54,21 +49,19 @@ spec:
         stage('Update Helm Chart') {
             steps {
                 container('git') {
-                    // Використовуємо твій доданий github-token для авторизації в Git
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
+                        cd ${env.WORKSPACE}
+                        
                         # Налаштування користувача
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
 
-                        # Оновлення тегу в values.yaml
                         sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' ${PROJECT_DIR}/charts/django-app/values.yaml
 
-                        # Комміт та Пуш з використанням токена
                         git add ${PROJECT_DIR}/charts/django-app/values.yaml
                         git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
                         
-                        # Обов'язково додаємо авторизацію в URL для push
                         git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/anhelov-y/my-microservice-project-CI_CD.git HEAD:lesson-8-9
                         """
                     }
