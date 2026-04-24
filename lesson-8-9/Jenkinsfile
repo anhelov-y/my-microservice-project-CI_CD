@@ -12,6 +12,12 @@ spec:
     - sleep
     args:
     - infinity
+  - name: git
+    image: alpine/git:latest
+    command:
+    - sleep
+    args:
+    - infinity
 """
             defaultContainer 'kaniko'
         }
@@ -35,9 +41,9 @@ spec:
                     AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
                     AWS_DEFAULT_REGION=${REGION} \
                     /kaniko/executor \
-                        --context lesson-8-9 \
-                        --dockerfile lesson-8-9/Dockerfile \
-                        --destination ${ECR_URL}:${BUILD_NUMBER}
+                      --context lesson-8-9 \
+                      --dockerfile lesson-8-9/Dockerfile \
+                      --destination ${ECR_URL}:${BUILD_NUMBER}
                     """
                 }
             }
@@ -45,14 +51,16 @@ spec:
 
         stage('Update Helm Chart') {
             steps {
-                sh """
-                sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' lesson-8-9/charts/django-app/values.yaml
-                git config user.email "jenkins@example.com"
-                git config user.name "Jenkins CI"
-                git add lesson-8-9/charts/django-app/values.yaml
-                git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
-                git push origin lesson-8-9
-                """
+                container('git') {
+                    sh """
+                    sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' lesson-8-9/charts/django-app/values.yaml
+                    git config user.email "jenkins@example.com"
+                    git config user.name "Jenkins CI"
+                    git add lesson-8-9/charts/django-app/values.yaml
+                    git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
+                    git push origin lesson-8-9
+                    """
+                }
             }
         }
     }
