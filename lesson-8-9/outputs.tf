@@ -11,6 +11,6 @@ output "eks_cluster_endpoint" {
 }
 
 output "update_config_command" {
-  value       = "aws eks update-kubeconfig --region us-east-1 --name ${module.eks.cluster_name}"
+  value       = "aws eks update-kubeconfig --region eu-central-1 --name ${module.eks.cluster_name}"
   description = "Виконайте цю команду після apply, щоб підключити kubectl"
 }

@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: "" # Сюди вставиш URL після terraform apply
+  repository: "024171229197.dkr.ecr.eu-central-1.amazonaws.com/django-app-repo"
   tag: "latest"
 
 service:
