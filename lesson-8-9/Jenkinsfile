@@ -1,4 +1,3 @@
-Ось повний Jenkinsfile з AWS credentials:
 groovypipeline {
     agent {
         kubernetes {
