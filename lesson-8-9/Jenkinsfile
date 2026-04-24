@@ -53,16 +53,16 @@ spec:
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
                         git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_RAW_URL} repo_tmp
-                        
                         cd repo_tmp
                         git checkout lesson-8-9
                         
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
 
-                        sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' ${PROJECT_DIR}/charts/django-app/values.yaml
+                        # ОШИБКА БУЛА ТУТ: Прибираємо PROJECT_DIR зі шляху, бо ми вже всередині клону
+                        sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' charts/django-app/values.yaml
 
-                        git add ${PROJECT_DIR}/charts/django-app/values.yaml
+                        git add charts/django-app/values.yaml
                         git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
                         git push origin lesson-8-9
                         """
