@@ -23,6 +23,7 @@ spec:
         ECR_URL = "024171229197.dkr.ecr.eu-central-1.amazonaws.com/django-app-repo"
         REGION  = "eu-central-1"
         PROJECT_DIR = "lesson-8-9"
+        REPO_URL = "github.com/anhelov-y/my-microservice-project-CI_CD.git"
     }
 
     stages {
@@ -49,19 +50,22 @@ spec:
         stage('Update Helm Chart') {
             steps {
                 container('git') {
-                    checkout scm
-                    
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh """
+                        sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' ${PROJECT_DIR}/charts/django-app/values.yaml
+
+                        git init
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
-
-                        sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' ${PROJECT_DIR}/charts/django-app/values.yaml
+                        
+                        git remote add origin-push https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_URL}
+                        
+                        git fetch origin-push lesson-8-9
+                        git checkout lesson-8-9
 
                         git add ${PROJECT_DIR}/charts/django-app/values.yaml
                         git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]"
-                        
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/anhelov-y/my-microservice-project-CI_CD.git HEAD:lesson-8-9
+                        git push origin-push lesson-8-9
                         """
                     }
                 }
