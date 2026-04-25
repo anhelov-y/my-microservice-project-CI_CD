@@ -66,12 +66,13 @@ spec:
                         git add lesson-8-9/charts/django-app/values.yaml
                         git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]" || echo "No changes to commit"
                         
-                        # Використовуємо --force, щоб уникнути помилок non-fast-forward
-                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_RAW_URL} lesson-8-9 --force
+                        # ВИПРАВЛЕННЯ: Замість --force робимо rebase, щоб підтягнути зміни
+                        git pull origin lesson-8-9 --rebase
+                        
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_RAW_URL} lesson-8-9
                         """
                     }
                 }
             }
-        }
     }
 }
