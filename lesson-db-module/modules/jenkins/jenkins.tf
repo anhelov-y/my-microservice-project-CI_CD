@@ -10,6 +10,8 @@ resource "helm_release" "jenkins" {
   chart      = "jenkins"
   namespace  = kubernetes_namespace.jenkins.metadata[0].name
   timeout = 600
+  wait = false
+
   values = [
     file("${path.module}/values.yaml")
   ]

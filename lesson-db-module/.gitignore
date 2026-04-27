@@ -30,3 +30,9 @@ staticfiles/
 
 # --- Jenkins ---
 jenkins.log
+
+# Робота в консолі (OS/IDE)
+.DS_Store
+.idea/
+.vscode/
+*.swp

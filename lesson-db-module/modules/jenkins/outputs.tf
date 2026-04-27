@@ -1,5 +1,5 @@
 output "jenkins_url" {
-  value       = "http://${data.kubernetes_service.jenkins.status[0].load_balancer[0].ingress[0].hostname}"
+  value       = "http://${data.kubernetes_service_v1.jenkins.status[0].load_balancer[0].ingress[0].hostname}"
   description = "URL для входу в Jenkins"
 }
 
@@ -8,7 +8,7 @@ output "jenkins_admin_password" {
   description = "Як отримати пароль адміністратора"
 }
 
-data "kubernetes_service" "jenkins" {
+data "kubernetes_service_v1" "jenkins" {
   metadata {
     name      = "jenkins"
     namespace = var.namespace
