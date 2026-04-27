@@ -29,3 +29,8 @@ output "rds_database_name" {
   description = "Назва бази даних"
   value       = module.rds.db_name
 }
+
+output "rds_reader_endpoint" {
+  description = "Aurora reader endpoint"
+  value       = module.rds.reader_endpoint
+}

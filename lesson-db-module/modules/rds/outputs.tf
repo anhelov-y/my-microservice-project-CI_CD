@@ -10,3 +10,9 @@ output "db_port" {
 output "db_name" {
   value = var.db_name
 }
+
+output "reader_endpoint" {
+  description = "The cluster reader endpoint"
+  # Використовуємо [0], бо у тебе там count або індекс
+  value       = try(aws_rds_cluster.this[0].reader_endpoint, "") 
+}
