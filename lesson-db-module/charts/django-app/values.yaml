@@ -11,10 +11,11 @@ service:
 
 env:
   DEBUG: "True"
-  DB_NAME: "postgres"
-  DB_USER: "postgres"
-  DB_HOST: "db-service"
+  DB_NAME: "django_db"
+  DB_USER: "dbadmin"
+  DB_HOST: "django-project-db-instance.cdskuqae60p9.eu-central-1.rds.amazonaws.com"
   DB_PORT: "5432"
+  DB_PASSWORD: "VerySecurePass123!"
 
 hpa:
   minReplicas: 2

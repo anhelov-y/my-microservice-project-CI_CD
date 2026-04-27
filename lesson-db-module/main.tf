@@ -44,11 +44,21 @@ module "jenkins" {
   cluster_name       = module.eks.cluster_name
   ecr_repository_url = module.ecr.repository_url
   region             = var.region
+
+  providers = {
+    kubernetes = kubernetes
+    helm       = helm
+  }
 }
 
 module "argo_cd" {
   source       = "./modules/argo_cd"
   cluster_name = module.eks.cluster_name
+
+  providers = {
+    kubernetes = kubernetes
+    helm       = helm
+  }
 }
 
 data "aws_eks_cluster_auth" "cluster" {
@@ -67,4 +77,21 @@ provider "helm" {
     cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.cluster.token
   }
+}
+
+module "rds" {
+  source                = "./modules/rds"
+  use_aurora            = false
+  project_name          = "django-project"
+  vpc_id                = module.vpc.vpc_id
+  private_subnets       = module.vpc.private_subnet_ids 
+  app_security_group_id = module.eks.node_security_group_id
+  engine                = "postgres"
+  engine_version        = "15"
+  instance_class        = "db.t3.micro"
+  parameter_group_family = "postgres15"
+
+  db_name               = "django_db"
+  db_username           = "dbadmin"
+  db_password           = "VerySecurePass123!"
 }

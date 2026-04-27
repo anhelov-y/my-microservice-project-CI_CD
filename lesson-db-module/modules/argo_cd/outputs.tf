@@ -1,5 +1,5 @@
 output "argocd_url" {
-  value       = "http://${data.kubernetes_service.argocd_server.status[0].load_balancer[0].ingress[0].hostname}"
+  value       = "http://${data.kubernetes_service_v1.argocd_server.status[0].load_balancer[0].ingress[0].hostname}"
   description = "URL для входу в Argo CD"
 }
 
@@ -8,7 +8,7 @@ output "argocd_initial_admin_password" {
   description = "Як отримати початковий пароль адміністратора"
 }
 
-data "kubernetes_service" "argocd_server" {
+data "kubernetes_service_v1" "argocd_server" {
   metadata {
     name      = "argocd-server"
     namespace = var.namespace

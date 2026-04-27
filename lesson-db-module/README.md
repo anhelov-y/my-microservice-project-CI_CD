@@ -1,117 +1,103 @@
-# Lesson 8-9: CI/CD with Jenkins + Helm + Terraform + Argo CD
+Terraform RDS Module
+Універсальний Terraform-модуль для створення баз даних AWS RDS або Aurora Cluster.
+Можливості
 
-## Architecture
-Developer → Git Push → Jenkins → Kaniko Build → ECR → Update values.yaml → ArgoCD Sync → EKS
+Створення звичайної RDS instance (PostgreSQL / MySQL)
+Створення Aurora Cluster з writer instance
+Автоматичне створення DB Subnet Group, Security Group, Parameter Group
+Підтримка багаторазового використання через змінні
 
-## Deploy Infrastructure
+Структура модуля
+modules/rds/
+├── aurora.tf # Створення Aurora Cluster + writer instance
+├── rds.tf # Створення звичайної RDS instance
+├── shared.tf # Спільні ресурси: Subnet Group, Security Group, Parameter Groups
+├── variables.tf # Змінні модуля
+└── outputs.tf # Виводи: хост, порт, назва БД
 
-```bash
-terraform init
-terraform apply
-aws eks update-kubeconfig --region eu-central-1 --name django-cluster
-```
+Приклад використання
+Звичайна RDS (PostgreSQL)
+hclmodule "rds" {
+source = "./modules/rds"
 
-## Важливо: Налаштування після розгортання
+use_aurora = false
+project_name = "my-project"
+vpc_id = module.vpc.vpc_id
+private_subnets = module.vpc.private_subnet_ids
+app_security_group_id = module.eks.node_security_group_id
 
-### 1. Зробити StorageClass default (необхідно для Jenkins PVC)
-```bash
-kubectl patch storageclass gp2 -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-```
+engine = "postgres"
+engine_version = "15.4"
+instance_class = "db.t3.micro"
+parameter_group_family = "postgres15"
 
-### 2. Встановити EBS CSI Driver (необхідно для створення volumes)
-```bash
-kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.28"
-```
+db_name = "mydb"
+db_username = "admin"
+db_password = "SecurePass123!"
 
-### 3. Зареєструвати OIDC Provider (необхідно для IAM ролей)
-```bash
-# Отримати OIDC URL
-aws eks describe-cluster --name django-cluster --region eu-central-1 \
-  --query "cluster.identity.oidc.issuer" --output text
-
-# Зареєструвати провайдер
-aws iam create-open-id-connect-provider \
-  --url https://oidc.eks.eu-central-1.amazonaws.com/id/<OIDC_ID> \
-  --client-id-list sts.amazonaws.com \
-  --thumbprint-list 9e99a48a9960b14926bb7f3b02e22da2b0ab7280
-```
-
-### 4. Створити IAM роль для EBS CSI Driver
-```bash
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-OIDC=oidc.eks.eu-central-1.amazonaws.com/id/<OIDC_ID>
-
-cat <<TRUST > trust-policy.json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {
-      "Federated": "arn:aws:iam::${ACCOUNT_ID}:oidc-provider/${OIDC}"
-    },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": {
-      "StringEquals": {
-        "${OIDC}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
-      }
-    }
-  }]
+allocated_storage = 20
+multi_az = false
 }
-TRUST
+Aurora Cluster (PostgreSQL)
+hclmodule "rds" {
+source = "./modules/rds"
 
-aws iam create-role --role-name AmazonEKS_EBS_CSI_DriverRole \
-  --assume-role-policy-document file://trust-policy.json
+use_aurora = true
+project_name = "my-project"
+vpc_id = module.vpc.vpc_id
+private_subnets = module.vpc.private_subnet_ids
+app_security_group_id = module.eks.node_security_group_id
 
-aws iam attach-role-policy \
-  --role-name AmazonEKS_EBS_CSI_DriverRole \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+engine = "aurora-postgresql"
+engine_version = "15.4"
+instance_class = "db.t3.medium"
+parameter_group_family = "aurora-postgresql15"
 
-kubectl annotate serviceaccount ebs-csi-controller-sa -n kube-system \
-  eks.amazonaws.com/role-arn=arn:aws:iam::${ACCOUNT_ID}:role/AmazonEKS_EBS_CSI_DriverRole
+db_name = "mydb"
+db_username = "admin"
+db_password = "SecurePass123!"
 
-kubectl rollout restart deployment ebs-csi-controller -n kube-system
-```
+aurora_instance_count = 1
+}
 
-## Access Jenkins
+Опис змінних
+ЗміннаТипDefaultОписproject_namestring—Назва проєкту, використовується як префікс для ресурсівuse_auroraboolfalseЯкщо true — створюється Aurora Cluster, якщо false — звичайна RDS instancevpc_idstring—ID VPC, в якій розміщується база данихprivate_subnetslist(string)—Список ID приватних підмереж для DB Subnet Groupapp_security_group_idstring—ID Security Group додатку (EKS нод), якому дозволено доступ до БДenginestring"postgres"Тип двигуна БД: postgres, mysql, aurora-postgresql, aurora-mysqlengine_versionstring—Версія двигуна БД, наприклад "15.4" для PostgreSQLinstance_classstring"db.t3.micro"Клас інстансу БД, наприклад db.t3.micro, db.t3.mediumparameter_group_familystring—Сімейство parameter group, наприклад postgres15, aurora-postgresql15db_namestring—Назва бази данихdb_usernamestring—Ім'я користувача бази данихdb_passwordstring—Пароль користувача бази даних (sensitive)db_portnumber5432Порт бази даних (5432 для PostgreSQL, 3306 для MySQL)allocated_storagenumber20Розмір сховища в GB (тільки для звичайної RDS)multi_azboolfalseЯкщо true — RDS розгортається в кількох зонах доступностіaurora_instance_countnumber1Кількість інстансів в Aurora Cluster
 
-```bash
-# Отримати URL
-kubectl get svc jenkins -n jenkins
+Outputs
+OutputОписdb_hostEndpoint для підключення до бази данихdb_portПорт бази данихdb_nameНазва бази даних
 
-# Отримати пароль
-kubectl exec -n jenkins jenkins-0 -- cat /var/jenkins_home/secrets/initialAdminPassword
-```
+Як змінити параметри БД
+Змінити тип БД (RDS → Aurora)
+hcluse_aurora = true # false = RDS, true = Aurora
+Змінити engine
+hcl# PostgreSQL
+engine = "postgres"
+engine_version = "15.4"
+parameter_group_family = "postgres15"
 
-## Jenkins Pipeline
+# MySQL
 
-New Item → Pipeline → "django-app-pipeline"
-Pipeline script from SCM → Git
-Repository URL: <your-repo>
-Branch: */lesson-8-9
-Script Path: Jenkinsfile
-Save → Build Now
+engine = "mysql"
+engine_version = "8.0"
+parameter_group_family = "mysql8.0"
+db_port = 3306
 
+# Aurora PostgreSQL
 
-## Access ArgoCD
+engine = "aurora-postgresql"
+engine_version = "15.4"
+parameter_group_family = "aurora-postgresql15"
+Змінити клас інстансу
+hclinstance_class = "db.t3.micro" # найменший, для dev
+instance_class = "db.t3.medium" # середній
+instance_class = "db.r5.large" # для production
+Увімкнути Multi-AZ (тільки для RDS)
+hclmulti_az = true
+Збільшити кількість Aurora інстансів
+hclaurora_instance_count = 2 # 1 writer + 1 reader
 
-```bash
-# Отримати URL
-kubectl get svc argocd-server -n argocd
+Вимоги
 
-# Отримати пароль
-kubectl get secret argocd-initial-admin-secret -n argocd \
-  -o jsonpath="{.data.password}" | base64 -d && echo
-```
-
-## Verify ArgoCD Sync
-
-```bash
-kubectl get application -n argocd
-kubectl get pods -n default
-```
-
-## Cleanup
-
-```bash
-terraform destroy
-```
+Terraform >= 1.0
+AWS Provider >= 4.0
+Наявний VPC з приватними підмережами в мінімум 2 зонах доступності
