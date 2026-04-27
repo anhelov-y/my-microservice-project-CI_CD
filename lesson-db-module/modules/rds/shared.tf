@@ -31,12 +31,12 @@ resource "aws_db_parameter_group" "rds" {
   parameter {
     name         = "max_connections"
     value        = "100"
-    apply_method = "pending-reboot" # ДОДАЙ ЦЕЙ РЯДОК
+    apply_method = "pending-reboot" 
   }
 
   parameter {
     name  = "log_statement"
-    value = "all"
+    value = "ddl" 
   }
 }
 
@@ -46,7 +46,13 @@ resource "aws_rds_cluster_parameter_group" "aurora" {
   family = var.parameter_group_family
 
   parameter {
-    name  = "max_connections"
-    value = "200"
+    name         = "max_connections"
+    value        = "1000" 
+    apply_method = "pending-reboot" 
+  }
+
+  parameter {
+    name  = "log_statement"
+    value = "ddl" 
   }
 }
