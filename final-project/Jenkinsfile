@@ -1,0 +1,77 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["sleep"]
+    args: ["infinity"]
+  - name: git
+    image: alpine/git:latest
+    command: ["sleep"]
+    args: ["infinity"]
+"""
+            defaultContainer 'kaniko'
+        }
+    }
+
+    environment {
+        ECR_URL = "024171229197.dkr.ecr.eu-central-1.amazonaws.com/django-app-repo"
+        REGION  = "eu-central-1"
+        PROJECT_DIR = "lesson-8-9"
+        REPO_RAW_URL = "github.com/anhelov-y/my-microservice-project-CI_CD.git"
+    }
+
+    stages {
+        stage('Build & Push to ECR') {
+            steps {
+                container('kaniko') {
+                    withCredentials([
+                        string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                        string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    ]) {
+                        sh """
+                        mkdir -p /kaniko/.docker
+                        echo '{"credsStore":"ecr-login"}' > /kaniko/.docker/config.json
+                        /kaniko/executor \
+                          --context ${env.WORKSPACE}/${PROJECT_DIR} \
+                          --dockerfile ${env.WORKSPACE}/${PROJECT_DIR}/Dockerfile \
+                          --destination ${ECR_URL}:${BUILD_NUMBER}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Update Helm Chart') {
+            steps {
+                container('git') {
+                    withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+                        sh """
+                        rm -rf repo_tmp
+                        git clone https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_RAW_URL} repo_tmp
+                        cd repo_tmp
+                        
+                        git checkout lesson-8-9
+                        
+                        git config user.email "jenkins@example.com"
+                        git config user.name "Jenkins CI"
+
+                        sed -i 's/tag: .*/tag: "${BUILD_NUMBER}"/' lesson-8-9/charts/django-app/values.yaml
+
+                        git add lesson-8-9/charts/django-app/values.yaml
+                        git commit -m "Update image tag to ${BUILD_NUMBER} [skip ci]" || echo "No changes to commit"
+                        
+                        # Використовуємо --force, щоб уникнути помилок non-fast-forward
+                        git push https://${GIT_USERNAME}:${GIT_PASSWORD}@${REPO_RAW_URL} lesson-8-9 --force
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
