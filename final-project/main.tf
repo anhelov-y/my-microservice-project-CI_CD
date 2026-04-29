@@ -7,7 +7,7 @@ variable "region" {
 }
 
 variable "project_name" {
-  default = "lesson-8-9"
+  default = "final-project"
 }
 
 variable "cluster_name" {
@@ -32,11 +32,29 @@ module "eks" {
   source       = "./modules/eks"
   cluster_name = var.cluster_name
   vpc_id       = module.vpc.vpc_id
-  subnet_ids   = module.vpc.private_subnet_ids 
+  subnet_ids   = module.vpc.private_subnet_ids
 }
 
 module "s3_backend" {
   source = "./modules/s3-backend"
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
+
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
 }
 
 module "jenkins" {
@@ -61,37 +79,29 @@ module "argo_cd" {
   }
 }
 
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
-}
+module "monitoring" {
+  source       = "./modules/monitoring"
+  cluster_name = module.eks.cluster_name
 
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  token                  = data.aws_eks_cluster_auth.cluster.token
-}
-
-provider "helm" {
-  kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    token                  = data.aws_eks_cluster_auth.cluster.token
+  providers = {
+    kubernetes = kubernetes
+    helm       = helm
   }
 }
 
 module "rds" {
-  source                = "./modules/rds"
-  use_aurora            = false
-  project_name          = "django-project"
-  vpc_id                = module.vpc.vpc_id
-  private_subnets       = module.vpc.private_subnet_ids 
-  app_security_group_id = module.eks.node_security_group_id
-  engine                = "postgres"
-  engine_version        = "15"
-  instance_class        = "db.t3.micro"
+  source                 = "./modules/rds"
+  use_aurora             = false
+  project_name           = "django-project"
+  vpc_id                 = module.vpc.vpc_id
+  private_subnets        = module.vpc.private_subnet_ids
+  app_security_group_id  = module.eks.node_security_group_id
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro"
   parameter_group_family = "postgres15"
 
-  db_name               = "django_db"
-  db_username           = "dbadmin"
-  db_password           = "VerySecurePass123!"
+  db_name     = "django_db"
+  db_username = "dbadmin"
+  db_password = "VerySecurePass123!"
 }

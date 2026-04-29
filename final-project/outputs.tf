@@ -30,7 +30,22 @@ output "rds_database_name" {
   value       = module.rds.db_name
 }
 
-output "rds_reader_endpoint" {
-  description = "Aurora reader endpoint"
-  value       = module.rds.reader_endpoint
+output "grafana_access" {
+  description = "Команда для доступу до Grafana"
+  value       = module.monitoring.grafana_url
+}
+
+output "prometheus_access" {
+  description = "Команда для доступу до Prometheus"
+  value       = module.monitoring.prometheus_url
+}
+
+output "jenkins_access" {
+  description = "Команда для доступу до Jenkins"
+  value       = "kubectl port-forward svc/jenkins 8080:8080 -n jenkins"
+}
+
+output "argocd_access" {
+  description = "Команда для доступу до Argo CD"
+  value       = "kubectl port-forward svc/argocd-server 8081:443 -n argocd"
 }
